@@ -44,6 +44,12 @@ class _MenuScreenState extends State<MenuScreen> {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.admin_panel_settings),
+            onPressed: () {
+              Navigator.pushNamed(context, '/login');
+            },
+          ),
+          IconButton(
             icon: Stack(
               children: [
                 const Icon(Icons.shopping_cart),

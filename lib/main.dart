@@ -2,8 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/menu_screen.dart';
+import 'services/database_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await DatabaseService().connect();
+  } catch (e) {
+    print('Error connecting to database: $e');
+  }
+  
   runApp(const MyApp());
 }
 
@@ -20,7 +31,12 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
         ),
-        home: const SplashScreen(),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const SplashScreen(),
+          '/menu': (context) => const MenuScreen(),
+          '/login': (context) => const LoginScreen(),
+        },
       ),
     );
   }
