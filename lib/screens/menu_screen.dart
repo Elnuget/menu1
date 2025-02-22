@@ -92,6 +92,18 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     setState(() {});
   }
 
+  void _handleLogout(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.logout();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Sesión cerrada exitosamente'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
@@ -102,12 +114,17 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
         title: const Text('Menú'),
         centerTitle: true,
         actions: [
-          if (authProvider.isAdmin)
+          if (authProvider.isAuthenticated) ...[
+            if (authProvider.isAdmin)
+              IconButton(
+                icon: const Icon(Icons.admin_panel_settings),
+                onPressed: _navigateToAdmin,
+              ),
             IconButton(
-              icon: const Icon(Icons.admin_panel_settings),
-              onPressed: _navigateToAdmin,
-            )
-          else
+              icon: const Icon(Icons.logout),
+              onPressed: () => _handleLogout(context),
+            ),
+          ] else
             IconButton(
               icon: const Icon(Icons.login),
               onPressed: () async {
