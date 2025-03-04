@@ -4,6 +4,8 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../models/menu_item.dart';
 import '../models/user.dart';
+import '../models/order.dart';
+import '../models/cart_item.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -23,7 +25,7 @@ class DatabaseService {
 
       _db = await openDatabase(
         path,
-        version: 1,
+        version: 2,
         onCreate: (Database db, int version) async {
           // Crear tabla de usuarios
           await db.execute('''
@@ -43,6 +45,32 @@ class DatabaseService {
               name TEXT UNIQUE NOT NULL,
               price REAL NOT NULL,
               category TEXT NOT NULL
+            )
+          ''');
+
+          // Crear tabla de pedidos
+          await db.execute('''
+            CREATE TABLE orders (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              user_id TEXT NOT NULL,
+              username TEXT NOT NULL,
+              subtotal REAL NOT NULL,
+              tax REAL NOT NULL,
+              total REAL NOT NULL,
+              order_date TEXT NOT NULL,
+              status INTEGER NOT NULL DEFAULT 0
+            )
+          ''');
+
+          // Crear tabla de items de pedidos
+          await db.execute('''
+            CREATE TABLE order_items (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              order_id INTEGER NOT NULL,
+              item_name TEXT NOT NULL,
+              price REAL NOT NULL,
+              quantity INTEGER NOT NULL,
+              FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE
             )
           ''');
 
@@ -76,6 +104,35 @@ class DatabaseService {
             'price': 6.99,
             'category': 'Postres',
           });
+        },
+        onUpgrade: (Database db, int oldVersion, int newVersion) async {
+          if (oldVersion < 2) {
+            // Crear tabla de pedidos si no existe
+            await db.execute('''
+              CREATE TABLE IF NOT EXISTS orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                username TEXT NOT NULL,
+                subtotal REAL NOT NULL,
+                tax REAL NOT NULL,
+                total REAL NOT NULL,
+                order_date TEXT NOT NULL,
+                status INTEGER NOT NULL DEFAULT 0
+              )
+            ''');
+
+            // Crear tabla de items de pedidos
+            await db.execute('''
+              CREATE TABLE IF NOT EXISTS order_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER NOT NULL,
+                item_name TEXT NOT NULL,
+                price REAL NOT NULL,
+                quantity INTEGER NOT NULL,
+                FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE
+              )
+            ''');
+          }
         },
       );
 
@@ -135,6 +192,41 @@ class DatabaseService {
     }
   }
 
+  Future<bool> registerUser(String username, String password, String email) async {
+    try {
+      print('Intentando registrar usuario: $username');
+      
+      // Verificar si el usuario ya existe
+      final userCheck = await _db?.query(
+        'users',
+        where: 'username = ? OR email = ?',
+        whereArgs: [username, email],
+      );
+      
+      if (userCheck != null && userCheck.isNotEmpty) {
+        print('El usuario o email ya existe');
+        return false;
+      }
+      
+      // Calcular el hash de la contraseña
+      final passwordHash = sha256.convert(utf8.encode(password)).toString();
+      
+      // Insertar el nuevo usuario
+      final result = await _db?.insert('users', {
+        'username': username,
+        'password': passwordHash,
+        'email': email,
+        'is_admin': 0,  // Los usuarios registrados no son administradores por defecto
+      });
+      
+      print('Usuario registrado con ID: $result');
+      return result != null && result > 0;
+    } catch (e) {
+      print('Error en registerUser: $e');
+      return false;
+    }
+  }
+
   Future<List<MenuItem>> getMenuItems() async {
     final results = await _db?.query('menu_items');
     return results?.map((row) => MenuItem(
@@ -171,6 +263,116 @@ class DatabaseService {
       where: 'name = ?',
       whereArgs: [name],
     );
+  }
+
+  // Métodos para gestionar pedidos
+  Future<int> createOrder(Order order, List<CartItem> items) async {
+    final db = _db;
+    if (db == null) throw Exception('Base de datos no inicializada');
+
+    int orderId = 0;
+    
+    await db.transaction((txn) async {
+      // Insertar el pedido
+      orderId = await txn.insert('orders', order.toMap());
+      
+      // Insertar los elementos del pedido
+      for (var item in items) {
+        await txn.insert('order_items', {
+          'order_id': orderId,
+          'item_name': item.name,
+          'price': item.price,
+          'quantity': item.quantity,
+        });
+      }
+    });
+    
+    return orderId;
+  }
+
+  Future<List<Order>> getOrdersByUser(String userId) async {
+    final db = _db;
+    if (db == null) throw Exception('Base de datos no inicializada');
+    
+    final orderMaps = await db.query(
+      'orders',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'order_date DESC',
+    );
+    
+    final orders = <Order>[];
+    
+    for (var orderMap in orderMaps) {
+      final order = Order.fromMap(orderMap);
+      
+      // Obtener los items del pedido
+      final itemMaps = await db.query(
+        'order_items',
+        where: 'order_id = ?',
+        whereArgs: [order.id],
+      );
+      
+      final items = itemMaps.map((itemMap) => OrderItem.fromMap(itemMap)).toList();
+      
+      orders.add(order);
+    }
+    
+    return orders;
+  }
+
+  Future<List<Order>> getAllOrders() async {
+    final db = _db;
+    if (db == null) throw Exception('Base de datos no inicializada');
+    
+    final orderMaps = await db.query(
+      'orders',
+      orderBy: 'order_date DESC',
+    );
+    
+    final orders = <Order>[];
+    
+    for (var orderMap in orderMaps) {
+      final order = Order.fromMap(orderMap);
+      
+      // Obtener los items del pedido
+      final itemMaps = await db.query(
+        'order_items',
+        where: 'order_id = ?',
+        whereArgs: [order.id],
+      );
+      
+      final items = itemMaps.map((itemMap) => OrderItem.fromMap(itemMap)).toList();
+      
+      orders.add(order);
+    }
+    
+    return orders;
+  }
+
+  Future<void> updateOrderStatus(int orderId, OrderStatus status) async {
+    final db = _db;
+    if (db == null) throw Exception('Base de datos no inicializada');
+    
+    await db.update(
+      'orders',
+      {'status': status.index},
+      where: 'id = ?',
+      whereArgs: [orderId],
+    );
+  }
+
+  Future<List<OrderItem>> getOrderItems(int orderId) async {
+    final db = _db;
+    if (db == null) throw Exception('Base de datos no inicializada');
+    
+    final itemMaps = await db.query(
+      'order_items',
+      where: 'order_id = ?',
+      whereArgs: [orderId],
+    );
+    
+    return itemMaps.map((itemMap) => OrderItem.fromMap(itemMap)).toList();
   }
 
   void close() {

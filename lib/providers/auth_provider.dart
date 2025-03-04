@@ -28,6 +28,22 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> register(String username, String password, String email) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final success = await DatabaseService().registerUser(username, password, email);
+      _isLoading = false;
+      notifyListeners();
+      return success;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void logout() {
     _currentUser = null;
     notifyListeners();

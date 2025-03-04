@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/order_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/admin_screen.dart';
+import 'screens/orders_screen.dart';
 import 'services/database_service.dart';
 
 void main() async {
@@ -29,20 +31,39 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
       ],
-      child: MaterialApp(
-        title: 'Mi Restaurante',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          useMaterial3: true,
+      child: Consumer<AuthProvider>(
+        builder: (context, authProvider, _) => MaterialApp(
+          title: 'Mi Restaurante',
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+            useMaterial3: true,
+          ),
+          initialRoute: '/',
+          routes: {
+            '/': (context) => const SplashScreen(),
+            '/login': (context) => const LoginScreen(),
+            '/menu': (context) {
+              if (!authProvider.isAuthenticated) {
+                return const LoginScreen();
+              }
+              return const MenuScreen();
+            },
+            '/admin': (context) {
+              if (!authProvider.isAuthenticated || !authProvider.isAdmin) {
+                return const LoginScreen();
+              }
+              return const AdminScreen();
+            },
+            '/orders': (context) {
+              if (!authProvider.isAuthenticated) {
+                return const LoginScreen();
+              }
+              return const OrdersScreen();
+            },
+          },
         ),
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const SplashScreen(),
-          '/menu': (context) => const MenuScreen(),
-          '/login': (context) => const LoginScreen(),
-          '/admin': (context) => const AdminScreen(),
-        },
       ),
     );
   }

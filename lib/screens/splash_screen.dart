@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'menu_screen.dart';
+import 'login_screen.dart';
 // Add this import
 
 class SplashScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const MenuScreen()),
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
 

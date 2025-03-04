@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/order_provider.dart';
 import '../models/cart_item.dart';
+import 'orders_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -119,18 +122,22 @@ class CartScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Aquí iría la lógica para procesar el pedido
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('¡Pedido realizado con éxito!'),
-                            ),
+                      child: Consumer<AuthProvider>(
+                        builder: (context, authProvider, _) {
+                          if (!authProvider.isAuthenticated) {
+                            return ElevatedButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/login');
+                              },
+                              child: const Text('Inicia sesión para realizar pedido'),
+                            );
+                          }
+                          
+                          return ElevatedButton(
+                            onPressed: () => _processOrder(context, cartProvider, authProvider),
+                            child: const Text('Realizar Pedido'),
                           );
-                          cartProvider.clearCart();
-                          Navigator.pop(context);
                         },
-                        child: const Text('Realizar Pedido'),
                       ),
                     ),
                   ],
@@ -141,5 +148,112 @@ class CartScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _processOrder(
+    BuildContext context, 
+    CartProvider cartProvider, 
+    AuthProvider authProvider
+  ) async {
+    if (cartProvider.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El carrito está vacío')),
+      );
+      return;
+    }
+
+    if (authProvider.currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debes iniciar sesión para realizar un pedido')),
+      );
+      return;
+    }
+
+    // Mostrar diálogo de confirmación
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Pedido'),
+        content: const Text('¿Estás seguro de realizar este pedido?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // Mostrar indicador de progreso
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Procesando pedido...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final userId = authProvider.currentUser!.id.toString();
+      final username = authProvider.currentUser!.username;
+      
+      final success = await orderProvider.createOrder(
+        userId,
+        username,
+        List.from(cartProvider.items),
+        cartProvider.subtotal,
+        cartProvider.tax,
+        cartProvider.total,
+      );
+
+      // Cerrar diálogo de progreso
+      Navigator.pop(context);
+
+      if (success) {
+        cartProvider.clearCart();
+        
+        // Mostrar mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Pedido realizado con éxito!'),
+          ),
+        );
+        
+        // Navegar a pantalla de pedidos
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OrdersScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al procesar el pedido. Intente nuevamente.'),
+          ),
+        );
+      }
+    } catch (e) {
+      // Cerrar diálogo de progreso
+      Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+        ),
+      );
+    }
   }
 }

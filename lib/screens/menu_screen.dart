@@ -5,6 +5,7 @@ import '../providers/cart_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/database_service.dart';
 import 'cart_screen.dart';
+import 'orders_screen.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -111,10 +112,20 @@ class _MenuScreenState extends State<MenuScreen> with WidgetsBindingObserver {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Menú'),
+        title: const Text('Menu Cliente'),
         centerTitle: true,
         actions: [
           if (authProvider.isAuthenticated) ...[
+            IconButton(
+              icon: const Icon(Icons.receipt_long),
+              tooltip: 'Mis Pedidos',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const OrdersScreen()),
+                );
+              },
+            ),
             if (authProvider.isAdmin)
               IconButton(
                 icon: const Icon(Icons.admin_panel_settings),
