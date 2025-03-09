@@ -35,9 +35,22 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) => MaterialApp(
+          debugShowCheckedModeBanner: false,
           title: 'Mi Restaurante',
           theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue.shade700),
+            scaffoldBackgroundColor: Colors.blue.shade50,
+            appBarTheme: AppBarTheme(
+              backgroundColor: Colors.blue.shade700,
+              foregroundColor: Colors.white,
+              elevation: 4,
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+              ),
+            ),
             useMaterial3: true,
           ),
           initialRoute: '/',

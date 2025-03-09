@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
-// Add this import
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -9,11 +8,33 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  
   @override
   void initState() {
     super.initState();
+    
+    // Configurar animación
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    
+    _animation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+    
+    _controller.forward();
     _navigateToHome();
+  }
+  
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   _navigateToHome() async {
@@ -34,34 +55,55 @@ class _SplashScreenState extends State<SplashScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.blue[300]!,
-              Colors.blue[600]!,
+              Colors.blue[800]!,
+              Colors.blue[400]!,
             ],
           ),
         ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FlutterLogo(size: 100),
-              SizedBox(height: 24),
-              Text(
-                'Mi Restaurante',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+        child: Center(
+          child: ScaleTransition(
+            scale: _animation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.restaurant,
+                  size: 120,
                   color: Colors.white,
                 ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Bienvenidos',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
+                const SizedBox(height: 24),
+                const Text(
+                  'Mi Restaurante',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Text(
+                  'Bienvenidos',
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.fastfood, color: Colors.white, size: 28),
+                    SizedBox(width: 16),
+                    Icon(Icons.local_bar, color: Colors.white, size: 28),
+                    SizedBox(width: 16),
+                    Icon(Icons.local_dining, color: Colors.white, size: 28),
+                    SizedBox(width: 16),
+                    Icon(Icons.cake, color: Colors.white, size: 28),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

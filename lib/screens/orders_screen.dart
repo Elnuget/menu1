@@ -54,36 +54,90 @@ class _OrdersScreenState extends State<OrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Pedidos'),
+        title: Row(
+          children: [
+            const Icon(Icons.receipt_long, size: 26),
+            const SizedBox(width: 8),
+            const Text('Mis Pedidos'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Actualizar pedidos',
             onPressed: _loadOrders,
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Consumer<OrderProvider>(
-              builder: (context, orderProvider, child) {
-                if (orderProvider.orders.isEmpty) {
-                  return const Center(
-                    child: Text('No tienes pedidos'),
-                  );
-                }
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.blue.shade100,
+              Colors.blue.shade50,
+            ],
+          ),
+        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Consumer<OrderProvider>(
+                builder: (context, orderProvider, child) {
+                  if (orderProvider.orders.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.receipt_long,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No tienes pedidos',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(context, '/menu');
+                            },
+                            icon: const Icon(Icons.restaurant_menu),
+                            label: const Text('Ir al Menú'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-                return RefreshIndicator(
-                  onRefresh: _loadOrders,
-                  child: ListView.builder(
-                    itemCount: orderProvider.orders.length,
-                    itemBuilder: (context, index) {
-                      final order = orderProvider.orders[index];
-                      return _buildOrderCard(context, order);
-                    },
-                  ),
-                );
-              },
-            ),
+                  return RefreshIndicator(
+                    onRefresh: _loadOrders,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: orderProvider.orders.length,
+                      itemBuilder: (context, index) {
+                        final order = orderProvider.orders[index];
+                        return _buildOrderCard(context, order);
+                      },
+                    ),
+                  );
+                },
+              ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.pushReplacementNamed(context, '/menu');
+        },
+        icon: const Icon(Icons.restaurant_menu),
+        label: const Text('Menú'),
+        backgroundColor: Colors.blue.shade700,
+      ),
     );
   }
 
@@ -91,7 +145,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
     
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -100,30 +158,61 @@ class _OrdersScreenState extends State<OrdersScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Pedido #${order.id}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                Row(
+                  children: [
+                    const Icon(Icons.restaurant, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Pedido #${order.id}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  dateFormat.format(order.orderDate),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.access_time, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        dateFormat.format(order.orderDate),
+                        style: TextStyle(
+                          color: Colors.grey[800],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text('Total: \$${order.total.toStringAsFixed(2)}'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.attach_money, size: 20, color: Colors.green),
+                const SizedBox(width: 4),
+                Text(
+                  'Total: \$${order.total.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             _buildStatusWidget(order.status),
             const SizedBox(height: 16),
-            const Divider(),
+            const Divider(height: 1),
             const SizedBox(height: 8),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -132,7 +221,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ),
                 );
               },
-              child: const Text('Ver detalles'),
+              icon: const Icon(Icons.visibility),
+              label: const Text('Ver detalles'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 40),
+              ),
             ),
           ],
         ),
@@ -144,38 +237,57 @@ class _OrdersScreenState extends State<OrdersScreen> {
     Color backgroundColor;
     Color textColor = Colors.white;
     String statusText;
+    IconData statusIcon;
 
     switch (status) {
       case OrderStatus.pending:
         backgroundColor = Colors.orange;
         statusText = 'Pendiente';
+        statusIcon = Icons.hourglass_empty;
         break;
       case OrderStatus.preparing:
         backgroundColor = Colors.blue;
         statusText = 'En preparación';
+        statusIcon = Icons.restaurant;
         break;
       case OrderStatus.ready:
         backgroundColor = Colors.green;
         statusText = 'Listo para entrega';
+        statusIcon = Icons.check_circle;
         break;
       case OrderStatus.delivered:
         backgroundColor = Colors.purple;
         statusText = 'Entregado ¡Disfrute su comida!';
+        statusIcon = Icons.celebration;
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: backgroundColor.withOpacity(0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Text(
-        statusText,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(statusIcon, color: textColor, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            statusText,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
