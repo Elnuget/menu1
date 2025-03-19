@@ -8,7 +8,7 @@ class CartProvider with ChangeNotifier {
   List<CartItem> get items => List.unmodifiable(_items);
   
   double get subtotal => _items.fold(0, (sum, item) => sum + item.total);
-  double get tax => subtotal * 0.16;
+  double get tax => subtotal * 0.15;
   double get total => subtotal + tax;
 
   void addItem(MenuItem menuItem) {

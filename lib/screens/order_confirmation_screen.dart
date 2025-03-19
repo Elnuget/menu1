@@ -102,7 +102,7 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Impuestos (16%)'),
+                          const Text('Impuestos (15%)'),
                           Text('\$${widget.tax.toStringAsFixed(2)}'),
                         ],
                       ),

@@ -143,7 +143,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('IVA (16%):'),
+                              const Text('IVA (15%):'),
                               Text('\$${widget.order.tax.toStringAsFixed(2)}'),
                             ],
                           ),

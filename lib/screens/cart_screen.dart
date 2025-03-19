@@ -274,7 +274,7 @@ class CartScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'IVA (16%):',
+                              'IVA (15%):',
                               style: TextStyle(fontSize: 16),
                             ),
                             Text(
